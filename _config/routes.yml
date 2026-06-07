@@ -1,0 +1,9 @@
+---
+Name: checkout-routes
+After:
+  - '#rootroutes'
+---
+SilverStripe\Control\Director:
+  rules:
+    'checkout/webhook/$Gateway!': Atwx\Checkout\Control\WebhookController
+    'checkout//$Action/$ID': Atwx\Checkout\Control\CheckoutController

@@ -1,0 +1,31 @@
+{
+    "name": "atwx/silverstripe-checkout",
+    "description": "Product-agnostic cart, order and payment module for SilverStripe",
+    "type": "silverstripe-vendormodule",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "silverstripe",
+        "cms",
+        "shop"
+    ],
+    "require": {
+        "silverstripe/framework": "^6",
+        "silverstripe/admin": "^3",
+        "mollie/mollie-api-php": "^2.0 || ^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Atwx\\Checkout\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Atwx\\Checkout\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

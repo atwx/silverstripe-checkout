@@ -1,0 +1,16 @@
+---
+Name: checkout
+---
+Atwx\Checkout\Payment\GatewayRegistry:
+  default: 'mollie'
+  gateways:
+    mollie:
+      class: Atwx\Checkout\Payment\Mollie\MollieGateway
+      api_key: '`MOLLIE_API_KEY`'
+    mock:
+      class: Atwx\Checkout\Payment\Mock\MockGateway
+      result: 'paid'
+
+Atwx\Checkout\Service\OrderService:
+  order_number_format: 'ORD-{year}-{seq:05}'
+  currency: 'EUR'
