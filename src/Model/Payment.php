@@ -23,7 +23,9 @@ class Payment extends DataObject
     private static array $db = [
         'GatewayCode' => 'Varchar(32)',
         'GatewayPaymentID' => 'Varchar(128)',
-        'Status' => "Enum('pending,authorized,paid,failed,cancelled,refunded','pending')",
+        'Status' => "Enum('pending,open,authorized,paid,failed,cancelled,refunded','pending')",
+        // Provider checkout page, so an open payment can be resumed.
+        'CheckoutUrl' => 'Varchar(1000)',
         'Amount' => 'Currency',
         'Currency' => 'Varchar(3)',
         'RawResponse' => 'Text',

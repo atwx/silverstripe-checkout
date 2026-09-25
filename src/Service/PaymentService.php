@@ -20,14 +20,25 @@ class PaymentService
 
     /**
      * Create a fresh pending Payment for an order and start it with the gateway.
-     * The webhook URL is derived from the gateway code; the return URL is supplied
-     * by the caller (it is app-specific).
+     * The webhook URL is derived from the gateway code; the return URL defaults to
+     * the module's token-based return handler (see returnUrl()).
      */
-    public function begin(Order $order, PaymentGateway $gateway, string $returnUrl): GatewayResult
+    public function begin(Order $order, PaymentGateway $gateway, ?string $returnUrl = null): GatewayResult
     {
         $payment = $this->createPayment($order, $gateway);
         $webhookUrl = Director::absoluteURL('checkout/webhook/' . $gateway->getCode());
-        return $gateway->initiate($payment, $returnUrl, $webhookUrl);
+        return $gateway->initiate($payment, $returnUrl ?? $this->returnUrl($order), $webhookUrl);
+    }
+
+    /**
+     * Absolute URL of the return handler for an order, keyed by its AccessToken.
+     */
+    public function returnUrl(Order $order): string
+    {
+        if (!$order->AccessToken) {
+            $order->write();
+        }
+        return Director::absoluteURL('checkout/return/' . $order->AccessToken);
     }
 
     public function createPayment(Order $order, PaymentGateway $gateway): Payment

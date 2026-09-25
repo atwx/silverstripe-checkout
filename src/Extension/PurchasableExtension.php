@@ -2,6 +2,7 @@
 
 namespace Atwx\Checkout\Extension;
 
+use Atwx\Checkout\Service\OrderService;
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
@@ -25,10 +26,10 @@ class PurchasableExtension extends Extension
         'IsActive' => 'Boolean(1)',
     ];
 
-    /** Localised, currency-formatted price. */
+    /** Localised price in the checkout currency, e.g. "25,00 €". */
     public function PriceFormatted(): string
     {
-        return $this->getOwner()->dbObject('Price')->Nice();
+        return OrderService::formatAmount((float) $this->getOwner()->Price);
     }
 
     /**

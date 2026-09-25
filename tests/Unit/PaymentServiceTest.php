@@ -11,6 +11,8 @@ use SilverStripe\Dev\SapphireTest;
 
 class PaymentServiceTest extends SapphireTest
 {
+    protected $usesDatabase = true;
+
     protected static $required_extensions = [
         Order::class => [OrderHookSpyExtension::class],
     ];

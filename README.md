@@ -61,7 +61,8 @@ $order->CancelUrl  = Director::absoluteURL('/checkout'); // optional
 $order->write();
 
 $gateway = GatewayRegistry::getDefault();    // or GatewayRegistry::get('mollie')
-$result  = PaymentService::singleton()->begin($order, $gateway, Director::absoluteURL('checkout/return/' . $order->ID));
+// The return URL defaults to checkout/return/{AccessToken}; pass your own as third argument if needed.
+$result  = PaymentService::singleton()->begin($order, $gateway);
 
 if ($result->isRedirect()) {
     return $controller->redirect($result->redirectUrl);  // hosted gateway checkout
@@ -72,17 +73,24 @@ if ($result->isRedirect()) {
 
 | Route | Controller | Purpose |
 |-------|------------|---------|
-| `GET checkout/return/$OrderID` | `CheckoutController` | Customer returns from gateway; reconciles, then redirects (see below). |
-| `GET checkout/thanks/$OrderID` | `CheckoutController` | Bare success page (fallback). |
-| `GET checkout/cancelled/$OrderID` | `CheckoutController` | Bare cancellation page (fallback). |
+| `GET checkout/return/$Token` | `CheckoutController` | Customer returns from gateway; reconciles, then redirects (see below). |
+| `GET checkout/thanks/$Token` | `CheckoutController` | Bare success page (fallback), also shows "being confirmed". |
+| `GET checkout/cancelled/$Token` | `CheckoutController` | Bare cancellation page (fallback). |
+
+Customer-facing routes use the order's random `AccessToken` (40 hex chars, generated on first
+write), never the sequential ID, so orders cannot be enumerated.
 | `POST checkout/webhook/$Gateway` | `WebhookController` | Server-to-server status callback; the authoritative signal. |
 
 ### Return handling (configurable)
 
 After the customer returns, the module reconciles the latest payment and then redirects:
 
-- completed → `Order.SuccessUrl` if set, otherwise the module's `thanks` template
-- not completed → `Order.CancelUrl` if set, otherwise the module's `cancelled` template
+- completed, or payment still `pending` (being processed) → `Order.SuccessUrl` if set,
+  otherwise the module's `thanks` template (which shows a "being confirmed" state)
+- payment `open` (created but not paid, e.g. customer left the provider page), `failed` or
+  `cancelled` → `Order.CancelUrl` if set, otherwise the module's `cancelled` template
+
+An open payment can be resumed via `Payment.CheckoutUrl` (stored by the Mollie gateway).
 
 Set `SuccessUrl` / `CancelUrl` on the order to send customers to your own themed pages.
 The `thanks` / `cancelled` templates are also overridable through the normal theme chain:
@@ -102,7 +110,8 @@ class MyOrderExtension extends SilverStripe\Core\Extension
 ```
 
 `onOrderCompleted` fires **exactly once**, on the transition into `completed` — safe against
-webhook retries. Lower-level payment hooks also exist: `onPaymentStatusChange`,
+webhook retries and against the webhook and the customer's return reconciling concurrently
+(the transition is claimed with a conditional `UPDATE`). Lower-level payment hooks also exist: `onPaymentStatusChange`,
 `onPaymentSucceeded`, `onPaymentFailed`, `onPaymentRefunded`.
 
 ## Gateways & configuration
@@ -135,6 +144,21 @@ Atwx\Checkout\Service\OrderService:
   order_number_format: 'ORD-{year}-{seq:05}'
   currency: 'EUR'
 ```
+
+## Payment statuses
+
+`pending` (processing), `open` (awaiting the customer), `authorized`, `paid`, `failed`,
+`cancelled`, `refunded`. Mollie's `open` maps to `open`, `canceled`/`expired` to `cancelled`.
+
+The webhook answers `200` when handled (also for unknown payment IDs), `404` for an unknown
+gateway code and `500` when reconciling failed (e.g. provider API unreachable), so the provider
+retries.
+
+## Formatting
+
+`OrderService::formatAmount($amount, $currency = null)` formats in the configured currency for
+the current locale (e.g. `25,00 €` for `de_DE`); `PriceFormatted()` and `Order::TotalFormatted()`
+use it.
 
 ## CMS
 

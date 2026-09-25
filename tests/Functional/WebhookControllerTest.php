@@ -11,6 +11,8 @@ use SilverStripe\Dev\FunctionalTest;
 
 class WebhookControllerTest extends FunctionalTest
 {
+    protected $usesDatabase = true;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +39,12 @@ class WebhookControllerTest extends FunctionalTest
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('paid', Payment::get()->byID($payment->ID)->Status);
         $this->assertSame('completed', Order::get()->byID($order->ID)->Status);
+    }
+
+    public function testUnknownGatewayIsNotFound(): void
+    {
+        $response = $this->post('checkout/webhook/doesnotexist', ['id' => 'pay_123']);
+        $this->assertSame(404, $response->getStatusCode());
     }
 
     public function testWebhookWithoutIdStillReturns200(): void

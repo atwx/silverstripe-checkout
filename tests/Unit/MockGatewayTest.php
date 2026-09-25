@@ -10,6 +10,8 @@ use SilverStripe\Dev\SapphireTest;
 
 class MockGatewayTest extends SapphireTest
 {
+    protected $usesDatabase = true;
+
     public function testInitiateRedirectsToReturnUrlAndStoresGatewayId(): void
     {
         $order = Order::create(['TotalAmount' => 10, 'Currency' => 'EUR']);

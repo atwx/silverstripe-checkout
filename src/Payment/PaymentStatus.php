@@ -8,6 +8,9 @@ namespace Atwx\Checkout\Payment;
 enum PaymentStatus: string
 {
     case Pending = 'pending';
+    // Created but not yet paid; the customer can still complete it (e.g. returned
+    // from the provider's checkout without paying).
+    case Open = 'open';
     case Authorized = 'authorized';
     case Paid = 'paid';
     case Failed = 'failed';
@@ -25,6 +28,14 @@ enum PaymentStatus: string
     /**
      * Whether this status is final (no further changes expected).
      */
+    /**
+     * Whether the customer still has to act (payment not started or abandoned).
+     */
+    public function isOpen(): bool
+    {
+        return $this === self::Open;
+    }
+
     public function isFinal(): bool
     {
         return in_array($this, [self::Paid, self::Failed, self::Cancelled, self::Refunded], true);

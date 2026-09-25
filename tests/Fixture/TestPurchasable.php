@@ -14,9 +14,9 @@ use SilverStripe\ORM\DataObject;
  */
 class TestPurchasable extends DataObject implements TestOnly
 {
-    private static $table_name = 'Atwx_Checkout_TestPurchasable';
+    private static string $table_name = 'Atwx_Checkout_TestPurchasable';
 
-    private static $db = [
+    private static array $db = [
         'Title' => 'Varchar(255)',
     ];
 }

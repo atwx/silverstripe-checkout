@@ -11,6 +11,8 @@ use SilverStripe\Dev\FunctionalTest;
 
 class CheckoutControllerTest extends FunctionalTest
 {
+    protected $usesDatabase = true;
+
     // Assert on the redirect itself; do not follow it to the (non-existent) targets.
     protected $autoFollowRedirection = false;
 
@@ -20,6 +22,8 @@ class CheckoutControllerTest extends FunctionalTest
         Config::modify()->set(GatewayRegistry::class, 'gateways', [
             'mock' => ['class' => MockGateway::class, 'result' => 'paid'],
             'mockfail' => ['class' => MockGateway::class, 'result' => 'failed'],
+            'mockpending' => ['class' => MockGateway::class, 'result' => 'pending'],
+            'mockopen' => ['class' => MockGateway::class, 'result' => 'open'],
         ]);
     }
 
@@ -46,7 +50,7 @@ class CheckoutControllerTest extends FunctionalTest
     {
         $order = $this->orderWithPayment('mock', '/danke-seite', '/abbruch');
 
-        $response = $this->get('checkout/return/' . $order->ID);
+        $response = $this->get('checkout/return/' . $order->AccessToken);
 
         $this->assertSame(302, $response->getStatusCode());
         $this->assertStringContainsString('/danke-seite', (string) $response->getHeader('Location'));
@@ -57,16 +61,46 @@ class CheckoutControllerTest extends FunctionalTest
     {
         $order = $this->orderWithPayment('mockfail', '/danke-seite', '/abbruch');
 
-        $response = $this->get('checkout/return/' . $order->ID);
+        $response = $this->get('checkout/return/' . $order->AccessToken);
 
         $this->assertSame(302, $response->getStatusCode());
         $this->assertStringContainsString('/abbruch', (string) $response->getHeader('Location'));
         $this->assertSame('pending', Order::get()->byID($order->ID)->Status);
     }
 
+    public function testReturnWithPendingPaymentGoesToSuccessUrl(): void
+    {
+        $order = $this->orderWithPayment('mockpending', '/danke-seite', '/abbruch');
+
+        $response = $this->get('checkout/return/' . $order->AccessToken);
+
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertStringContainsString('/danke-seite', (string) $response->getHeader('Location'));
+        $this->assertSame('pending', Order::get()->byID($order->ID)->Status);
+    }
+
+    public function testReturnWithOpenPaymentGoesToCancelUrl(): void
+    {
+        $order = $this->orderWithPayment('mockopen', '/danke-seite', '/abbruch');
+
+        $response = $this->get('checkout/return/' . $order->AccessToken);
+
+        $this->assertStringContainsString('/abbruch', (string) $response->getHeader('Location'));
+    }
+
     public function testReturnForUnknownOrderIsNotFound(): void
     {
-        $response = $this->get('checkout/return/999999');
+        $response = $this->get('checkout/return/' . str_repeat('a', 40));
         $this->assertSame(404, $response->getStatusCode());
+    }
+
+    public function testOrdersCannotBeAccessedBySequentialId(): void
+    {
+        $order = $this->orderWithPayment('mock', '', '');
+
+        $this->assertNotEmpty($order->AccessToken);
+        $this->assertSame(404, $this->get('checkout/thanks/' . $order->ID)->getStatusCode());
+        $this->assertSame(404, $this->get('checkout/return/' . $order->ID)->getStatusCode());
+        $this->assertSame(200, $this->get('checkout/thanks/' . $order->AccessToken)->getStatusCode());
     }
 }

@@ -63,7 +63,8 @@ class MollieGateway implements PaymentGateway
         ]);
 
         $payment->GatewayPaymentID = $molliePayment->id;
-        $payment->Status = PaymentStatus::Pending->value;
+        $payment->CheckoutUrl = (string) $molliePayment->getCheckoutUrl();
+        $payment->Status = PaymentStatus::Open->value;
         $payment->write();
 
         return GatewayResult::redirect($molliePayment->getCheckoutUrl());
@@ -100,7 +101,8 @@ class MollieGateway implements PaymentGateway
             'canceled' => PaymentStatus::Cancelled,
             'expired' => PaymentStatus::Cancelled,
             'refunded' => PaymentStatus::Refunded,
-            default => PaymentStatus::Pending, // open, pending
+            'open' => PaymentStatus::Open,
+            default => PaymentStatus::Pending, // pending: being processed by the provider
         };
     }
 }

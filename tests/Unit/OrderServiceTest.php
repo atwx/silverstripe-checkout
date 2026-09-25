@@ -9,6 +9,8 @@ use SilverStripe\Dev\SapphireTest;
 
 class OrderServiceTest extends SapphireTest
 {
+    protected $usesDatabase = true;
+
     protected static $extra_dataobjects = [
         TestPurchasable::class,
     ];
@@ -16,6 +18,13 @@ class OrderServiceTest extends SapphireTest
     protected static $required_extensions = [
         TestPurchasable::class => [\Atwx\Checkout\Extension\PurchasableExtension::class],
     ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Apps may configure their own format; the tests assert on the module default.
+        Config::modify()->set(OrderService::class, 'order_number_format', 'ORD-{year}-{seq:05}');
+    }
 
     public function testCreateDirectSnapshotsItemsAndTotal(): void
     {

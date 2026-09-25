@@ -8,6 +8,8 @@ use SilverStripe\Dev\SapphireTest;
 
 class OrderTest extends SapphireTest
 {
+    protected $usesDatabase = true;
+
     protected static $required_extensions = [
         Order::class => [OrderHookSpyExtension::class],
     ];
@@ -29,6 +31,32 @@ class OrderTest extends SapphireTest
         $this->assertSame('completed', $order->Status);
         $this->assertNotEmpty($order->CompletedAt);
         $this->assertSame(1, OrderHookSpyExtension::$completedCount);
+    }
+
+    public function testCompletingStaleCopiesFiresHookOnce(): void
+    {
+        $order = Order::create(['Status' => 'pending']);
+        $order->write();
+        // Two requests (webhook + customer return) each hold their own copy.
+        $first = Order::get()->byID($order->ID);
+        $second = Order::get()->byID($order->ID);
+
+        $first->markAsCompleted();
+        $second->markAsCompleted();
+
+        $this->assertSame('completed', Order::get()->byID($order->ID)->Status);
+        $this->assertSame(1, OrderHookSpyExtension::$completedCount);
+    }
+
+    public function testAccessTokenIsGeneratedAndUnique(): void
+    {
+        $a = Order::create();
+        $a->write();
+        $b = Order::create();
+        $b->write();
+
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{40}$/', $a->AccessToken);
+        $this->assertNotSame($a->AccessToken, $b->AccessToken);
     }
 
     public function testCancelDoesNotOverrideCompletedOrder(): void

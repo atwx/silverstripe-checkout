@@ -7,6 +7,8 @@ use SilverStripe\Dev\SapphireTest;
 
 class PurchasableExtensionTest extends SapphireTest
 {
+    protected $usesDatabase = true;
+
     protected static $extra_dataobjects = [
         TestPurchasable::class,
     ];

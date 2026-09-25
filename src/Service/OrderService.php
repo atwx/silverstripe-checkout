@@ -4,10 +4,12 @@ namespace Atwx\Checkout\Service;
 
 use Atwx\Checkout\Model\Order;
 use Atwx\Checkout\Model\OrderItem;
+use NumberFormatter;
 use SilverStripe\Core\Config\Configurable;
 use SilverStripe\Core\Injector\Injectable;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBDatetime;
+use SilverStripe\i18n\i18n;
 
 /**
  * Creates orders from purchasables and assigns human-readable order numbers.
@@ -62,6 +64,18 @@ class OrderService
         $order->write();
 
         return $order;
+    }
+
+    /**
+     * Format an amount in the configured (or given) currency for the current locale,
+     * e.g. "25,00 €" for de_DE.
+     */
+    public static function formatAmount(float $amount, ?string $currency = null): string
+    {
+        $currency = $currency ?: (string) self::config()->get('currency');
+        $formatter = new NumberFormatter(i18n::get_locale(), NumberFormatter::CURRENCY);
+        $formatted = $formatter->formatCurrency($amount, $currency);
+        return $formatted === false ? number_format($amount, 2) . ' ' . $currency : $formatted;
     }
 
     public function generateOrderNumber(): string
